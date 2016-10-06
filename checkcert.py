@@ -40,7 +40,7 @@ def connect(context, host_name):
         response = False
     else:
         der_cert = conn.getpeercert()
-        nice_print(host_name, der_cert, conn.cipher())
+        return nice_print(host_name, der_cert, conn.cipher())
 
 def find_value(v, name):
     if isinstance(v, tuple) and v[0] == name:
@@ -59,7 +59,9 @@ def nice_print(host_name, cert, cipher):
     subject = find_value(cert['subject'], 'commonName')
     notAfter = cert['notAfter']
     issuer = find_value(cert['issuer'], 'commonName')
-    l = [host_name, subject, issuer, notAfter]
+    l = (host_name, subject, issuer, notAfter)
+    size = [len(i) for i in l]
+    return size, l
     print("".join(word.ljust(35) for word in l))
 
 if __name__ == '__main__':
@@ -84,9 +86,17 @@ if __name__ == '__main__':
             usage()
             sys.exit(2)
 
-    l = ["NAME", "SUBJECT", "ISSUER", "EXPIRES"]
-    print("".join(word.ljust(35) for word in l))
+    output = []
+    spaces = [0 for i in range(4)]
+
+    l = ("NAME", "SUBJECT", "ISSUER", "EXPIRES")
+    output.append(l)
     if os.path.isfile(args[0]):
         with open(args[0], 'r') as file:
             for line in file:
-                connect(create_context(), line.rstrip())
+                size, data = connect(create_context(), line.rstrip())
+                spaces = [max(a+5, b) for (a,b) in zip(size, spaces)]
+                output.append(data)
+
+        for l in output:
+            print("".join(word.ljust(size) for (word, size) in zip(l, spaces)))
